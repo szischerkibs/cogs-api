@@ -1,0 +1,57 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net5.0</TargetFramework>
+    <RootNamespace>cogs_api</RootNamespace>
+  </PropertyGroup>
+
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <WarningLevel>4</WarningLevel>
+    <DocumentationFile>bin\Debug\net5.0\cogs-api.xml</DocumentationFile>
+    <NoWarn>1701;1702,1591</NoWarn>
+  </PropertyGroup>
+  <ItemGroup>
+    <None Remove="Models\" />
+    <None Remove="Repositories\" />
+    <None Remove="dbup-sqlserver" />
+    <None Remove="Scripts\" />
+    <None Remove="Controllers\" />
+    <None Remove="Swashbuckle.AspNetCore" />
+    <None Remove="Interfaces\" />
+    <None Remove="Authentication\" />
+    <None Remove="Microsoft.AspNetCore.Authentication" />
+    <None Remove="System.IdentityModel.Tokens.Jwt" />
+    <None Remove="Microsoft.VisualStudio.Web.CodeGeneration.Design" />
+    <None Remove="System.Net.Http" />
+    <None Remove="System.Web.Http.Common" />
+    <None Remove="Microsoft.AspNetCore.Authentication.JwtBearer" />
+    <None Remove="System.Configuration.ConfigurationManager" />
+    <None Remove="Scripts\Script00001-Create tables.sql" />
+    <None Remove="Scripts\Script00002-Create Functions.sql" />
+    <None Remove="Scripts\Script00003-Create Stored Procedures.sql" />
+    <None Remove="Scripts\Script00004-Create Seed Data.sql" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Models\" />
+    <Folder Include="Repositories\" />
+    <Folder Include="Scripts\" />
+    <Folder Include="Controllers\" />
+    <Folder Include="Interfaces\" />
+    <Folder Include="Authentication\" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="dbup-sqlserver" Version="4.5.0" />
+    <PackageReference Include="Swashbuckle.AspNetCore" Version="6.2.3" />
+    <PackageReference Include="Microsoft.AspNetCore.Authentication" Version="2.2.0" />
+    <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="6.15.1" />
+    <PackageReference Include="Microsoft.VisualStudio.Web.CodeGeneration.Design" Version="5.0.2" />
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="5.0.13" />
+    <PackageReference Include="System.Configuration.ConfigurationManager" Version="6.0.0" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Scripts\Script00001-Create tables.sql" />
+    <EmbeddedResource Include="Scripts\Script00002-Create Functions.sql" />
+    <EmbeddedResource Include="Scripts\Script00003-Create Stored Procedures.sql" />
+    <EmbeddedResource Include="Scripts\Script00004-Create Seed Data.sql" />
+  </ItemGroup>
+</Project>
