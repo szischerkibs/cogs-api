@@ -30,6 +30,8 @@
     <None Remove="Scripts\Script00002-Create Functions.sql" />
     <None Remove="Scripts\Script00003-Create Stored Procedures.sql" />
     <None Remove="Scripts\Script00004-Create Seed Data.sql" />
+    <None Remove="Utilities\" />
+    <None Remove="Scripts\Script00005-Create Error Log.sql" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Models\" />
@@ -38,6 +40,7 @@
     <Folder Include="Controllers\" />
     <Folder Include="Interfaces\" />
     <Folder Include="Authentication\" />
+    <Folder Include="Utilities\" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="dbup-sqlserver" Version="4.5.0" />
@@ -53,5 +56,6 @@
     <EmbeddedResource Include="Scripts\Script00002-Create Functions.sql" />
     <EmbeddedResource Include="Scripts\Script00003-Create Stored Procedures.sql" />
     <EmbeddedResource Include="Scripts\Script00004-Create Seed Data.sql" />
+    <EmbeddedResource Include="Scripts\Script00005-Create Error Log.sql" />
   </ItemGroup>
 </Project>

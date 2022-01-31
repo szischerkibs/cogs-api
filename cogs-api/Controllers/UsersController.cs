@@ -14,7 +14,7 @@ namespace cogs_api.Controllers
     [Authorize]
     [Route("api/[controller]")]
     [ApiController]
-    public class UsersController : Controller
+    public class UsersController : BaseController
     {
         private readonly IJwtAuth jwtAuth;
 
