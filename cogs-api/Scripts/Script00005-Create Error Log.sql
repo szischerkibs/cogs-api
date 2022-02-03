@@ -1,11 +1,11 @@
-﻿/****** Object:  Table [DB].[Error]    ******/
+﻿/****** Object:  Table [dbo].[Error]    ******/
 SET ANSI_NULLS ON
 GO
 
 SET QUOTED_IDENTIFIER ON
 GO
 
-CREATE TABLE [DB].[Error](
+CREATE TABLE [dbo].[Error](
 	[Id] [int] IDENTITY(1,1) NOT NULL,
 	[SourceServer] [VARCHAR](100) NOT NULL,
 	[SourceDatabase] [VARCHAR](100) NOT NULL,
@@ -21,10 +21,10 @@ CREATE TABLE [DB].[Error](
 ) ON [PRIMARY]
 GO
 
-ALTER TABLE [DB].[Error] ADD  DEFAULT (sysutcdatetime()) FOR [UTCRecordTime]
+ALTER TABLE [dbo].[Error] ADD  DEFAULT (sysutcdatetime()) FOR [UTCRecordTime]
 GO
 
-ALTER TABLE [DB].[Error] ADD  DEFAULT (suser_sname()) FOR [UserName]
+ALTER TABLE [dbo].[Error] ADD  DEFAULT (suser_sname()) FOR [UserName]
 GO
 
 
@@ -47,7 +47,7 @@ CREATE PROCEDURE [dbo].[InsertDBError]
 AS
 BEGIN
 	SET NOCOUNT ON;
-	INSERT INTO DB.Error(SourceServer,SourceDatabase,SourceObject,ErrorNumber,ErrorSeverity,ErrorState,ErrorLine,ErrorMessage)
+	INSERT INTO dbo.Error(SourceServer,SourceDatabase,SourceObject,ErrorNumber,ErrorSeverity,ErrorState,ErrorLine,ErrorMessage)
 	VALUES(@SourceServer,@SourceDatabase,@SourceObject,@ErrorNumber,@ErrorSeverity,@ErrorState,@ErrorLine,@ErrorMessage)
 	RETURN scope_identity()
 END

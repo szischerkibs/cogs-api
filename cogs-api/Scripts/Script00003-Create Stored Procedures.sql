@@ -1,11 +1,11 @@
-﻿/****** Object:  StoredProcedure [dbo].[AddSessionSwitch]     ******/
+﻿/****** Object:  StoredProcedure [dbo].[AddSessionSwitch]    Script Date: 1/31/2022 1:04:14 PM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
 GO
 CREATE PROCEDURE [dbo].[AddSessionSwitch]
-    @FromUserId [nvarchar](max),
-    @ToUserId [nvarchar](max),
+    @FromUserId INT,
+    @ToUserId INT,
     @SessionId [int],
     @ForSessionId [int],
     @Type [int]
@@ -54,21 +54,21 @@ BEGIN
     	END
 END
 GO
-/****** Object:  StoredProcedure [dbo].[ApplicationDelete]     ******/
+/****** Object:  StoredProcedure [dbo].[ApplicationDelete]    Script Date: 1/31/2022 1:04:14 PM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
 GO
 CREATE PROCEDURE [dbo].[ApplicationDelete]
-    @applicationId [nvarchar](max)
+    @applicationId INT
 AS
 BEGIN
     	SET NOCOUNT ON;
-    	                                    DELETE dbo.Applications 
+    DELETE dbo.Applications 
     WHERE Id = @applicationId
 END
 GO
-/****** Object:  StoredProcedure [dbo].[ApplicationGetAll]     ******/
+/****** Object:  StoredProcedure [dbo].[ApplicationGetAll]    Script Date: 1/31/2022 1:04:14 PM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -76,36 +76,31 @@ GO
 CREATE PROCEDURE [dbo].[ApplicationGetAll]
 AS
 BEGIN
-     SET NOCOUNT ON;
-    	                                    SELECT * FROM dbo.Applications
+    SET NOCOUNT ON;
+    SELECT * FROM dbo.Applications
 END
 GO
-/****** Object:  StoredProcedure [dbo].[ApplicationGetById]     ******/
+/****** Object:  StoredProcedure [dbo].[ApplicationGetById]    Script Date: 1/31/2022 1:04:14 PM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
 GO
 CREATE PROCEDURE [dbo].[ApplicationGetById]
-    @applicationId [nvarchar](max)
+    @applicationId INT
 AS
 BEGIN
     	SET NOCOUNT ON;
-    	                                    SELECT * FROM dbo.Applications a
+    SELECT * FROM dbo.Applications a
     WHERE a.Id = @applicationId
 END
 GO
-/****** Object:  StoredProcedure [dbo].[ApplicationUpsert]     ******/
+/****** Object:  StoredProcedure [dbo].[ApplicationUpsert]    Script Date: 1/31/2022 1:04:14 PM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
 GO
 CREATE PROCEDURE [dbo].[ApplicationUpsert]
     @Id [int],
-    @FirstName [nvarchar](max),
-    @LastName [nvarchar](max),
-    @Gender [nvarchar](max),
-    @Phone [nvarchar](max),
-    @EmailAddress [nvarchar](max),
     @School [nvarchar](max),
     @Major [nvarchar](max),
     @Topics [nvarchar](max),
@@ -123,12 +118,7 @@ BEGIN
     --Insert
     		INSERT INTO dbo.Applications
     		(
-    		    FirstName
-    		  , LastName
-    		  , Gender
-    		  , EmailAddress
-    		  , Phone
-    		  , School
+    		  School
     		  , Major
     		  , Topics
     		  , Essay
@@ -141,12 +131,7 @@ BEGIN
     		)
     		VALUES
     		(
-    		    @FirstName
-    		  , @LastName
-    		  , @Gender 
-    		  , @EmailAddress 
-    		  , @Phone 
-    		  , @School
+    		  @School
     		  , @Major 
     		  , @Topics
     		  , @Essay 
@@ -162,12 +147,7 @@ BEGIN
     BEGIN
     --Update
     			UPDATE dbo.Applications
-    				SET FirstName = @FirstName
-    		  , LastName = @LastName
-    		  , Gender = @Gender
-    		  , EmailAddress = @EmailAddress
-    		  , Phone = @Phone
-    		  , School = @School
+    				SET School = @School
     		  , Major = @Major
     		  , Topics = @Topics
     		  , Essay = @Essay
@@ -182,7 +162,7 @@ BEGIN
     
 END
 GO
-/****** Object:  StoredProcedure [dbo].[AutoAssignUsersToSessions]     ******/
+/****** Object:  StoredProcedure [dbo].[AutoAssignUsersToSessions]    Script Date: 1/31/2022 1:04:14 PM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -194,7 +174,7 @@ BEGIN
     SET NOCOUNT ON;
     
     DECLARE @SessionId INT
-    DECLARE @UserId VARCHAR(128)
+    DECLARE @UserId INT
     DECLARE @Msg VARCHAR(1000)
     DECLARE @UnableToAssign TABLE(SessionId INT)
     
@@ -202,7 +182,7 @@ BEGIN
     		INNER JOIN dbo.SessionTypes st 
     		ON st.Id = s.SessionType_Id
     WHERE s.SessionType_Id IN (SELECT Id FROM dbo.SessionTypes st WHERE Name IN ('General Session', 'Static Session', 'Pre-Compiler', 'PreCompiler', 'Sponsor Session'))  
-    AND isnull(s.VolunteersRequired,1) > (SELECT count(*) FROM dbo.UserSessions su WHERE su.Session_Id = s.Id)
+    AND isnull(s.VolunteersRequired,1) > (SELECT count(*) FROM dbo.UserSessions su WHERE su.SessionId = s.Id)
     AND s.Id NOT IN (SELECT uta.SessionId FROM @UnableToAssign uta)
     	AND s.VolunteersRequired <> 99
     ORDER BY st.Priority, s.SessionStartTime DESC
@@ -211,15 +191,15 @@ BEGIN
     BEGIN
     	SET @UserId = NULL 
     	SELECT TOP 1 @UserId = anu.Id
-    	FROM dbo.AspNetUsers anu
-    	INNER JOIN dbo.AspNetUserRoles anur
+    	FROM dbo.Users anu
+    	INNER JOIN dbo.UserRoles anur
     		ON anur.UserId = anu.Id
-    	INNER JOIN dbo.AspNetRoles anr
+    	INNER JOIN dbo.Roles anr
     		ON anr.Id = anur.RoleId
     	LEFT JOIN dbo.UserSessions su
-    		ON su.User_Id = anu.Id
+    		ON su.UserId = anu.Id
     	LEFT JOIN dbo.Sessions s
-    		ON s.Id = su.Session_Id
+    		ON s.Id = su.SessionId
     	WHERE anr.Name = 'Volunteers'
     	AND dbo.HasCollision(@SessionId, anu.Id) = 0
     		AND dbo.HasException(@SessionId, anu.Id) = 0
@@ -231,8 +211,8 @@ BEGIN
     	BEGIN
     		INSERT INTO dbo.UserSessions
     		(
-    			Session_Id
-    			, User_Id
+    			SessionId
+    			, UserId
     		)
     		VALUES
     		(
@@ -260,7 +240,7 @@ BEGIN
     		        INNER JOIN dbo.SessionTypes st 
     		        ON st.Id = s.SessionType_Id
     WHERE s.SessionType_Id IN (SELECT Id FROM dbo.SessionTypes st WHERE Name IN ('General Session', 'Static Session', 'Pre-Compiler', 'PreCompiler', 'Sponsor Session'))  
-    AND isnull(s.VolunteersRequired,1) > (SELECT count(*) FROM dbo.UserSessions su WHERE su.Session_Id = s.Id)
+    AND isnull(s.VolunteersRequired,1) > (SELECT count(*) FROM dbo.UserSessions su WHERE su.SessionId = s.Id)
     AND s.Id NOT IN (SELECT uta.SessionId FROM @UnableToAssign uta)
     	        AND s.VolunteersRequired <> 99
     ORDER BY st.Priority, s.SessionStartTime DESC
@@ -268,7 +248,29 @@ BEGIN
     
 END
 GO
-/****** Object:  StoredProcedure [dbo].[MarkAsCancelled]     ******/
+/****** Object:  StoredProcedure [dbo].[InsertDBError]    Script Date: 1/31/2022 1:04:14 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE PROCEDURE [dbo].[InsertDBError]
+	@SourceServer VARCHAR(100),
+	@SourceDatabase VARCHAR(100),
+	@SourceObject VARCHAR(100),
+	@ErrorNumber INT,
+	@ErrorSeverity INT,
+	@ErrorState INT,
+	@ErrorLine INT,
+	@ErrorMessage VARCHAR(255)
+AS
+BEGIN
+	SET NOCOUNT ON;
+	INSERT INTO dbo.Error(SourceServer,SourceDatabase,SourceObject,ErrorNumber,ErrorSeverity,ErrorState,ErrorLine,ErrorMessage)
+	VALUES(@SourceServer,@SourceDatabase,@SourceObject,@ErrorNumber,@ErrorSeverity,@ErrorState,@ErrorLine,@ErrorMessage)
+	RETURN scope_identity()
+END
+GO
+/****** Object:  StoredProcedure [dbo].[MarkAsCancelled]    Script Date: 1/31/2022 1:04:14 PM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -294,37 +296,37 @@ BEGIN
 
 END
 GO
-/****** Object:  StoredProcedure [dbo].[RoleAddUser]     ******/
+/****** Object:  StoredProcedure [dbo].[RoleAddUser]    Script Date: 1/31/2022 1:04:14 PM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
 GO
 CREATE PROCEDURE [dbo].[RoleAddUser]
-    @userId [nvarchar](max),
-    @roleId [nvarchar](max)
+    @userId int,
+    @roleId int
 AS
 BEGIN
     	SET NOCOUNT ON;
-    	                                        INSERT INTO dbo.AspNetUserRoles
-    	                                            (UserId, RoleId)
-    	                                        VALUES
-    (@userId, @roleId)
+    	INSERT INTO dbo.UserRoles
+    	    (UserId, RoleId)
+    	VALUES
+			(@userId, @roleId)
 END
 GO
-/****** Object:  StoredProcedure [dbo].[RoleDelete]     ******/
+/****** Object:  StoredProcedure [dbo].[RoleDelete]    Script Date: 1/31/2022 1:04:14 PM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
 GO
 CREATE PROCEDURE [dbo].[RoleDelete]
-    @roleId [nvarchar](max)
+    @roleId INT
 AS
 BEGIN
-        SET NOCOUNT ON;
-    	DELETE FROM dbo.AspNetRoles WHERE Id = @roleId
+    SET NOCOUNT ON;
+    DELETE FROM dbo.Roles WHERE Id = @roleId
 END
 GO
-/****** Object:  StoredProcedure [dbo].[RoleGetAll]     ******/
+/****** Object:  StoredProcedure [dbo].[RoleGetAll]    Script Date: 1/31/2022 1:04:14 PM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -332,24 +334,24 @@ GO
 CREATE PROCEDURE [dbo].[RoleGetAll]
 AS
 BEGIN
-    	SET NOCOUNT ON;
-    	                                    SELECT * FROM dbo.AspNetRoles
+    SET NOCOUNT ON;
+    SELECT * FROM dbo.Roles
 END
 GO
-/****** Object:  StoredProcedure [dbo].[RoleGetById]     ******/
+/****** Object:  StoredProcedure [dbo].[RoleGetById]    Script Date: 1/31/2022 1:04:14 PM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
 GO
 CREATE PROCEDURE [dbo].[RoleGetById]
-    @roleId [nvarchar](max)
+    @roleId INT
 AS
 BEGIN
     SET NOCOUNT ON;
-    	                                    SELECT * FROM dbo.AspNetRoles WHERE Id = @roleId
+    SELECT * FROM dbo.Roles WHERE Id = @roleId
 END
 GO
-/****** Object:  StoredProcedure [dbo].[RoleGetByName]     ******/
+/****** Object:  StoredProcedure [dbo].[RoleGetByName]    Script Date: 1/31/2022 1:04:14 PM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -358,27 +360,27 @@ CREATE PROCEDURE [dbo].[RoleGetByName]
     @roleName [nvarchar](max)
 AS
 BEGIN
-    	SET NOCOUNT ON;
-    	                                        SELECT * FROM dbo.AspNetRoles WHERE Name = @roleName
+	SET NOCOUNT ON;
+    SELECT * FROM dbo.Roles WHERE Name = @roleName
 END
 GO
-/****** Object:  StoredProcedure [dbo].[RoleGetUsersById]     ******/
+/****** Object:  StoredProcedure [dbo].[RoleGetUsersById]    Script Date: 1/31/2022 1:04:14 PM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
 GO
 CREATE PROCEDURE [dbo].[RoleGetUsersById]
-    @roleId [nvarchar](max)
+    @roleId INT
 AS
 BEGIN
-    	SET NOCOUNT ON;
-    	                                            SELECT * FROM dbo.AspNetUsers anu 
-    		                                            INNER JOIN dbo.AspNetUserRoles anur
-    		                                            ON anur.UserId = anu.Id
-    		                                            WHERE anur.RoleId = @roleId
+    SET NOCOUNT ON;
+    SELECT * FROM dbo.Users anu 
+    	INNER JOIN dbo.UserRoles anur
+    	ON anur.UserId = anu.Id
+    	WHERE anur.RoleId = @roleId
 END
 GO
-/****** Object:  StoredProcedure [dbo].[RoleGetUsersByName]     ******/
+/****** Object:  StoredProcedure [dbo].[RoleGetUsersByName]    Script Date: 1/31/2022 1:04:14 PM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -387,30 +389,30 @@ CREATE PROCEDURE [dbo].[RoleGetUsersByName]
     @roleName [nvarchar](max)
 AS
 BEGIN
-    	SET NOCOUNT ON;
-    	                                            SELECT * FROM dbo.AspNetUsers anu 
-    		                                            INNER JOIN dbo.AspNetUserRoles anur
-    			                                            ON anur.UserId = anu.Id
-    		                                            INNER JOIN dbo.AspNetRoles anr
-    			                                            ON anr.Id = anur.RoleId
-    		                                            WHERE anr.Name = @roleName
+    SET NOCOUNT ON;
+    SELECT * FROM dbo.Users anu 
+    	INNER JOIN dbo.UserRoles anur
+    		ON anur.UserId = anu.Id
+    	INNER JOIN dbo.Roles anr
+    		ON anr.Id = anur.RoleId
+    	WHERE anr.Name = @roleName
 END
 GO
-/****** Object:  StoredProcedure [dbo].[RoleRemoveUser]     ******/
+/****** Object:  StoredProcedure [dbo].[RoleRemoveUser]    Script Date: 1/31/2022 1:04:14 PM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
 GO
 CREATE PROCEDURE [dbo].[RoleRemoveUser]
-    @userId [nvarchar](max),
-    @roleId [nvarchar](max)
+    @userId int,
+    @roleId int
 AS
 BEGIN
-    	SET NOCOUNT ON;
-    	                                        DELETE dbo.AspNetUserRoles WHERE UserId = @userId AND RoleId = @roleId
+    SET NOCOUNT ON;
+    DELETE dbo.UserRoles WHERE UserId = @userId AND RoleId = @roleId
 END
 GO
-/****** Object:  StoredProcedure [dbo].[RoomGetAll]     ******/
+/****** Object:  StoredProcedure [dbo].[RoomGetAll]    Script Date: 1/31/2022 1:04:14 PM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -418,11 +420,11 @@ GO
 CREATE PROCEDURE [dbo].[RoomGetAll]
 AS
 BEGIN
-     SET NOCOUNT ON;
-    	                                    SELECT * FROM dbo.Rooms Order By Name
+    SET NOCOUNT ON;
+    SELECT * FROM dbo.Rooms Order By Name
 END
 GO
-/****** Object:  StoredProcedure [dbo].[RoomGetBySessionId]     ******/
+/****** Object:  StoredProcedure [dbo].[RoomGetBySessionId]    Script Date: 1/31/2022 1:04:14 PM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -431,14 +433,14 @@ CREATE PROCEDURE [dbo].[RoomGetBySessionId]
     @SessionId [int]
 AS
 BEGIN
-    	SET NOCOUNT ON;
-    	                                    SELECT * FROM dbo.Rooms r
-    		                                    INNER JOIN dbo.SessionRooms sr
-    			                                    ON sr.Room_Id = r.Id
-    	                                    WHERE sr.Session_Id = @SessionId
+    SET NOCOUNT ON;
+    SELECT * FROM dbo.Rooms r
+    	INNER JOIN dbo.SessionRooms sr
+    		ON sr.Room_Id = r.Id
+    WHERE sr.Session_Id = @SessionId
 END
 GO
-/****** Object:  StoredProcedure [dbo].[ScheduleExceptionGetAll]     ******/
+/****** Object:  StoredProcedure [dbo].[ScheduleExceptionGetAll]    Script Date: 1/31/2022 1:04:14 PM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -450,31 +452,31 @@ BEGIN
     SET NOCOUNT ON
     
     SELECT se.Id
-    , se.StartTime
-    , se.EndTime
-    , se.User_Id
-    		  FROM dbo.ScheduleExceptions se
+		, se.StartTime
+		, se.EndTime
+		, se.UserId
+    FROM dbo.ScheduleExceptions se
     
 END
 GO
-/****** Object:  StoredProcedure [dbo].[SessionAssignUser]     ******/
+/****** Object:  StoredProcedure [dbo].[SessionAssignUser]    Script Date: 1/31/2022 1:04:14 PM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
 GO
 CREATE PROCEDURE [dbo].[SessionAssignUser]
-    @UserId [nvarchar](max),
-    @SessionId [int]
+    @UserId [INT],
+    @SessionId [INT]
 AS
 BEGIN
     SET NOCOUNT ON;
-    	                                    INSERT INTO dbo.UserSessions
-    	                                    (User_Id, Session_Id)
+    INSERT INTO dbo.UserSessions
+	    (UserId, SessionId)
     VALUES
-    	                                    (@UserId,@SessionId)
+		(@UserId,@SessionId)
 END
 GO
-/****** Object:  StoredProcedure [dbo].[SessionGetAll]     ******/
+/****** Object:  StoredProcedure [dbo].[SessionGetAll]    Script Date: 1/31/2022 1:04:14 PM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -483,62 +485,60 @@ CREATE PROCEDURE [dbo].[SessionGetAll]
 AS
 BEGIN
     SET NOCOUNT ON;
-    	                                    SELECT
-    		                                    s.Id
-    , s.FeedSessionId
-    , s.SessionTime
-    , s.SessionStartTime
-    , s.SessionEndTime
-    , CASE WHEN s.Cancelled = 1 THEN '[CANCELLED] ' + s.Title ELSE s.Title END AS Title
-    , s.Abstract
-    , s.Category
-    , s.VolunteersRequired
-    , s.ActualSessionStartTime
-    , s.ActualSessionEndTime
-    , s.Attendees10
-    , s.Attendees50
-    , s.Notes
-    , s.SessionType_Id
-    	                                    FROM dbo.Sessions s
+	SELECT
+		s.Id
+		, s.FeedSessionId
+		, s.SessionTime
+		, s.SessionStartTime
+		, s.SessionEndTime
+		, CASE WHEN s.Cancelled = 1 THEN '[CANCELLED] ' + s.Title ELSE s.Title END AS Title
+		, s.Abstract
+		, s.Category
+		, s.VolunteersRequired
+		, s.ActualSessionStartTime
+		, s.ActualSessionEndTime
+		, s.Attendees10
+		, s.Attendees50
+		, s.Notes
+		, s.SessionType_Id
+    FROM dbo.Sessions s
 END
 GO
-/****** Object:  StoredProcedure [dbo].[SessionGetAllForUser]     ******/
+/****** Object:  StoredProcedure [dbo].[SessionGetAllForUser]    Script Date: 1/31/2022 1:04:14 PM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
 GO
-
 CREATE PROCEDURE [dbo].[SessionGetAllForUser]
-    @UserId [nvarchar](max)
+    @UserId INT
 AS
 BEGIN
     
     SET NOCOUNT ON;
-    	SELECT
-    		s.Id
-    , s.FeedSessionId
-    , s.SessionTime
-    , s.SessionStartTime
-    , s.SessionEndTime
-    , CASE WHEN s.Cancelled = 1 THEN '[CANCELLED] ' + s.Title ELSE s.Title END AS Title
-    , s.Abstract
-    , s.Category
-    , s.VolunteersRequired
-    , s.ActualSessionStartTime
-    , s.ActualSessionEndTime
-    , s.Attendees10
-    , s.Attendees50
-    , s.Notes
-    	  , s.SessionType_Id
+    SELECT
+    	s.Id
+		, s.FeedSessionId
+		, s.SessionTime
+		, s.SessionStartTime
+		, s.SessionEndTime
+		, CASE WHEN s.Cancelled = 1 THEN '[CANCELLED] ' + s.Title ELSE s.Title END AS Title
+		, s.Abstract
+		, s.Category
+		, s.VolunteersRequired
+		, s.ActualSessionStartTime
+		, s.ActualSessionEndTime
+		, s.Attendees10
+		, s.Attendees50
+		, s.Notes
+    	, s.SessionType_Id
     	FROM dbo.Sessions s
     		LEFT JOIN dbo.UserSessions us
-    		ON us.Session_Id = s.Id
-    	WHERE us.User_Id = @UserId OR s.VolunteersRequired = 99
+    		ON us.SessionId = s.Id
+    	WHERE us.UserId = @UserId OR s.VolunteersRequired = 99
     
 END
-
 GO
-/****** Object:  StoredProcedure [dbo].[SessionGetAllInfo]     ******/
+/****** Object:  StoredProcedure [dbo].[SessionGetAllInfo]    Script Date: 1/31/2022 1:04:14 PM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -568,16 +568,16 @@ BEGIN
     SELECT * FROM dbo.UserCheckIns uci
     	
     
-    SELECT anu.*, us.Session_Id FROM dbo.AspNetUsers anu
+    SELECT anu.*, us.SessionId FROM dbo.Users anu
     	INNER JOIN dbo.UserSessions us
-    		ON us.User_Id = anu.Id
+    		ON us.UserId = anu.Id
     	UNION
-    	SELECT anu.*, us.Id AS Session_Id FROM dbo.AspNetUsers anu
+    	SELECT anu.*, us.Id AS Session_Id FROM dbo.Users anu
     	CROSS JOIN dbo.Sessions us
     		WHERE us.VolunteersRequired = 99
 END
 GO
-/****** Object:  StoredProcedure [dbo].[SessionGetById]     ******/
+/****** Object:  StoredProcedure [dbo].[SessionGetById]    Script Date: 1/31/2022 1:04:14 PM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -588,28 +588,28 @@ AS
 BEGIN
     
     SET NOCOUNT ON;
-    	SELECT
-    		s.Id
-    , s.FeedSessionId
-    , s.SessionTime
-    , s.SessionStartTime
-    , s.SessionEndTime
-    , CASE WHEN s.Cancelled = 1 THEN '[CANCELLED] ' + s.Title ELSE s.Title END AS Title
-    , s.Abstract
-    , s.Category
-    , s.VolunteersRequired
-    , s.ActualSessionStartTime
-    , s.ActualSessionEndTime
-    , s.Attendees10
-    , s.Attendees50
-    , s.Notes
-    	  , s.SessionType_Id
+    SELECT
+    	s.Id
+		, s.FeedSessionId
+		, s.SessionTime
+		, s.SessionStartTime
+		, s.SessionEndTime
+		, CASE WHEN s.Cancelled = 1 THEN '[CANCELLED] ' + s.Title ELSE s.Title END AS Title
+		, s.Abstract
+		, s.Category
+		, s.VolunteersRequired
+		, s.ActualSessionStartTime
+		, s.ActualSessionEndTime
+		, s.Attendees10
+		, s.Attendees50
+		, s.Notes
+    	, s.SessionType_Id
     	FROM dbo.Sessions s
     	WHERE Id = @SessionId
     
 END
 GO
-/****** Object:  StoredProcedure [dbo].[SessionGetResults]     ******/
+/****** Object:  StoredProcedure [dbo].[SessionGetResults]    Script Date: 1/31/2022 1:04:14 PM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -645,7 +645,7 @@ BEGIN
     			AND s.FeedSessionId IS NOT NULL
 END
 GO
-/****** Object:  StoredProcedure [dbo].[SessionImport]     ******/
+/****** Object:  StoredProcedure [dbo].[SessionImport]    Script Date: 1/31/2022 1:04:14 PM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -739,7 +739,7 @@ BEGIN
     
 END
 GO
-/****** Object:  StoredProcedure [dbo].[SessionImportFromFeed]     ******/
+/****** Object:  StoredProcedure [dbo].[SessionImportFromFeed]    Script Date: 1/31/2022 1:04:14 PM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -881,7 +881,7 @@ BEGIN
     
 END
 GO
-/****** Object:  StoredProcedure [dbo].[SessionTypeGetBySessionId]     ******/
+/****** Object:  StoredProcedure [dbo].[SessionTypeGetBySessionId]    Script Date: 1/31/2022 1:04:14 PM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -891,26 +891,26 @@ CREATE PROCEDURE [dbo].[SessionTypeGetBySessionId]
 AS
 BEGIN
     
-    	                            SET NOCOUNT ON;
-    	                            SELECT * FROM dbo.SessionTypes st
-    	                            WHERE st.Id = @SessionTypeId
+    SET NOCOUNT ON;
+    SELECT * FROM dbo.SessionTypes st
+    WHERE st.Id = @SessionTypeId
 END
 GO
-/****** Object:  StoredProcedure [dbo].[SessionUnassignUser]     ******/
+/****** Object:  StoredProcedure [dbo].[SessionUnassignUser]    Script Date: 1/31/2022 1:04:14 PM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
 GO
 CREATE PROCEDURE [dbo].[SessionUnassignUser]
-    @UserId [nvarchar](max),
+    @UserId INT,
     @SessionId [int]
 AS
 BEGIN
     SET NOCOUNT ON;
-    	                                    DELETE dbo.UserSessions WHERE Session_Id = @SessionId AND User_Id = @UserId
+    DELETE dbo.UserSessions WHERE SessionId = @SessionId AND UserId = @UserId
 END
 GO
-/****** Object:  StoredProcedure [dbo].[SessionUpsert]     ******/
+/****** Object:  StoredProcedure [dbo].[SessionUpsert]    Script Date: 1/31/2022 1:04:14 PM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -1078,7 +1078,7 @@ BEGIN
     
 END
 GO
-/****** Object:  StoredProcedure [dbo].[SpeakerGetBySessionId]     ******/
+/****** Object:  StoredProcedure [dbo].[SpeakerGetBySessionId]    Script Date: 1/31/2022 1:04:14 PM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -1087,14 +1087,14 @@ CREATE PROCEDURE [dbo].[SpeakerGetBySessionId]
     @SessionId [int]
 AS
 BEGIN
-      SET NOCOUNT ON;
-    	                                        SELECT * FROM dbo.Speakers s
-    		                                        INNER JOIN dbo.SpeakerSessions ss
-    			                                        ON ss.Speaker_Id = s.Id
-    	                                        WHERE ss.Session_Id = @SessionId
+    SET NOCOUNT ON;
+    SELECT * FROM dbo.Speakers s
+    	INNER JOIN dbo.SpeakerSessions ss
+    		ON ss.Speaker_Id = s.Id
+    WHERE ss.Session_Id = @SessionId
 END
 GO
-/****** Object:  StoredProcedure [dbo].[SpeakerUpsert]     ******/
+/****** Object:  StoredProcedure [dbo].[SpeakerUpsert]    Script Date: 1/31/2022 1:04:14 PM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -1112,51 +1112,51 @@ CREATE PROCEDURE [dbo].[SpeakerUpsert]
 AS
 BEGIN
     SET NOCOUNT ON;
-    	                                        IF (SELECT 1 FROM Speakers WHERE Id = @Id) = 1
-    	                                        BEGIN
-    		                                        --UPDATE
-    		                                        UPDATE [dbo].[Speakers]
-    		                                           SET [FirstName] = @FirstName
-    			                                          ,[LastName] = @LastName
-    			                                          ,[Biography] = @Biography
-    			                                          ,[GravatarUrl] = @GravatarUrl
-    			                                          ,[TwitterLink] = @TwitterLink
-    			                                          ,[GitHubLink] = @GitHubLink
-    			                                          ,[LinkedInProfile] = @LinkedInProfile
-    			                                          ,[BlogUrl] = @BlogUrl
-    		                                         WHERE Id = @Id
-    	                                        END
-    	                                        ELSE
-    	                                        BEGIN
-    		                                        --INSERT
-    		                                        INSERT INTO dbo.Speakers
-    		                                        (
-    		                                            Id
-    		                                          , FirstName
-    		                                          , LastName
-    		                                          , Biography
-    		                                          , GravatarUrl
-    		                                          , TwitterLink
-    		                                          , GitHubLink
-    		                                          , LinkedInProfile
-    		                                          , BlogUrl
-    		                                        )
-    		                                        VALUES
-    		                                        (
-    		                                            @Id
-    		                                          , @FirstName
-    		                                          , @LastName
-    		                                          , @Biography
-    		                                          , @GravatarUrl
-    		                                          , @TwitterLink
-    		                                          , @GitHubLink
-    		                                          , @LinkedInProfile
-    		                                          , @BlogUrl
-    		                                        )
-    	                                        END
+    IF (SELECT 1 FROM Speakers WHERE Id = @Id) = 1
+    BEGIN
+    	--UPDATE
+    	UPDATE [dbo].[Speakers]
+    		SET [FirstName] = @FirstName
+    			,[LastName] = @LastName
+    			,[Biography] = @Biography
+    			,[GravatarUrl] = @GravatarUrl
+    			,[TwitterLink] = @TwitterLink
+    			,[GitHubLink] = @GitHubLink
+    			,[LinkedInProfile] = @LinkedInProfile
+    			,[BlogUrl] = @BlogUrl
+    		WHERE Id = @Id
+    END
+    ELSE
+    BEGIN
+    	--INSERT
+    	INSERT INTO dbo.Speakers
+    	(
+    		Id
+    		, FirstName
+    		, LastName
+    		, Biography
+    		, GravatarUrl
+    		, TwitterLink
+    		, GitHubLink
+    		, LinkedInProfile
+    		, BlogUrl
+    	)
+    	VALUES
+    	(
+    		@Id
+    		, @FirstName
+    		, @LastName
+    		, @Biography
+    		, @GravatarUrl
+    		, @TwitterLink
+    		, @GitHubLink
+    		, @LinkedInProfile
+    		, @BlogUrl
+    	)
+    END
 END
 GO
-/****** Object:  StoredProcedure [dbo].[TagGetBySessionId]     ******/
+/****** Object:  StoredProcedure [dbo].[TagGetBySessionId]    Script Date: 1/31/2022 1:04:14 PM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -1165,14 +1165,14 @@ CREATE PROCEDURE [dbo].[TagGetBySessionId]
     @SessionId [int]
 AS
 BEGIN
-    	SET NOCOUNT ON;
-    	                            SELECT * FROM dbo.Rooms r
-    		                            INNER JOIN dbo.SessionRooms sr
-    			                            ON sr.Room_Id = r.Id
-    	                            WHERE sr.Session_Id = @SessionId
+    SET NOCOUNT ON;
+    SELECT * FROM dbo.Rooms r
+    	INNER JOIN dbo.SessionRooms sr
+    		ON sr.Room_Id = r.Id
+    WHERE sr.Session_Id = @SessionId
 END
 GO
-/****** Object:  StoredProcedure [dbo].[UserCheckInGetBySessionId]     ******/
+/****** Object:  StoredProcedure [dbo].[UserCheckInGetBySessionId]    Script Date: 1/31/2022 1:04:14 PM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -1181,19 +1181,19 @@ CREATE PROCEDURE [dbo].[UserCheckInGetBySessionId]
     @SessionId [int]
 AS
 BEGIN
-    	SET NOCOUNT ON;
-    	                            SELECT * FROM dbo.UserCheckIns uci
-    	                            WHERE uci.SessionId = @SessionId
+	SET NOCOUNT ON;
+    SELECT * FROM dbo.UserCheckIns uci
+    WHERE uci.SessionId = @SessionId
 END
 GO
-/****** Object:  StoredProcedure [dbo].[UserCheckInUpsert]     ******/
+/****** Object:  StoredProcedure [dbo].[UserCheckInUpsert]    Script Date: 1/31/2022 1:04:14 PM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
 GO
 CREATE PROCEDURE [dbo].[UserCheckInUpsert]
     @SessionId [int],
-    @UserId [nvarchar](max),
+    @UserId INT,
     @CheckInTime [datetime]
 AS
 BEGIN
@@ -1226,23 +1226,23 @@ BEGIN
     
 END
 GO
-/****** Object:  StoredProcedure [dbo].[UserDelete]     ******/
+/****** Object:  StoredProcedure [dbo].[UserDelete]    Script Date: 1/31/2022 1:04:14 PM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
 GO
 CREATE PROCEDURE [dbo].[UserDelete]
-    @userId [nvarchar](max)
+    @userId INT
 AS
 BEGIN
     
     SET NOCOUNT ON;
-    	                                    SELECT * INTO #user FROM dbo.AspNetUsers anu WHERE Id = @userId
-    	                                    DELETE FROM dbo.AspNetUsers WHERE Id = @userId
-    	                                    SELECT * FROM #user
+    SELECT * INTO #user FROM dbo.Users anu WHERE Id = @userId
+    DELETE FROM dbo.Users WHERE Id = @userId
+    SELECT * FROM #user
 END
 GO
-/****** Object:  StoredProcedure [dbo].[UserGetAll]     ******/
+/****** Object:  StoredProcedure [dbo].[UserGetAll]    Script Date: 1/31/2022 1:04:14 PM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -1250,24 +1250,24 @@ GO
 CREATE PROCEDURE [dbo].[UserGetAll]
 AS
 BEGIN
-    	SET NOCOUNT ON;
-    	                                    SELECT * FROM dbo.AspNetUsers anu
+	SET NOCOUNT ON;
+    SELECT * FROM dbo.Users anu
 END
 GO
-/****** Object:  StoredProcedure [dbo].[UserGetById]     ******/
+/****** Object:  StoredProcedure [dbo].[UserGetById]    Script Date: 1/31/2022 1:04:14 PM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
 GO
 CREATE PROCEDURE [dbo].[UserGetById]
-    @userId [nvarchar](max)
+    @userId INT
 AS
 BEGIN
     SET NOCOUNT ON;
-    	                                    SELECT * FROM dbo.AspNetUsers anu WHERE Id = @userId
+    SELECT * FROM dbo.Users anu WHERE Id = @userId
 END
 GO
-/****** Object:  StoredProcedure [dbo].[UserGetBySessionId]     ******/
+/****** Object:  StoredProcedure [dbo].[UserGetBySessionId]    Script Date: 1/31/2022 1:04:14 PM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -1276,27 +1276,27 @@ CREATE PROCEDURE [dbo].[UserGetBySessionId]
     @SessionId [int]
 AS
 BEGIN
-    		SET NOCOUNT ON;
-    	                                                IF (SELECT s.VolunteersRequired FROM dbo.Sessions s WHERE id = @SessionId) = 99
-    	                                                BEGIN
-    		                                                SELECT * FROM dbo.AspNetUsers anu
-    	                                                END
-    	                                                ELSE
-    	                                                BEGIN
-    		                                                SELECT * FROM dbo.AspNetUsers anu
-    		                                                INNER JOIN dbo.UserSessions us
-    			                                                ON us.User_Id = anu.Id
-    		                                                WHERE us.Session_Id = @SessionId    
-    	                                                END  
+    SET NOCOUNT ON;
+    IF (SELECT s.VolunteersRequired FROM dbo.Sessions s WHERE id = @SessionId) = 99
+    BEGIN
+    	SELECT * FROM dbo.Users anu
+    END
+    ELSE
+    BEGIN
+    	SELECT * FROM dbo.Users anu
+    	INNER JOIN dbo.UserSessions us
+    		ON us.UserId = anu.Id
+    	WHERE us.SessionId = @SessionId    
+    END  
 END
 GO
-/****** Object:  StoredProcedure [dbo].[UserUpdate]     ******/
+/****** Object:  StoredProcedure [dbo].[UserUpdate]    Script Date: 1/31/2022 1:04:14 PM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
 GO
 CREATE PROCEDURE [dbo].[UserUpdate]
-    @userId [nvarchar](max),
+    @userId INT,
     @FirstName [nvarchar](max),
     @LastName [nvarchar](max),
     @Gravatar [nvarchar](max),
@@ -1306,12 +1306,12 @@ CREATE PROCEDURE [dbo].[UserUpdate]
 AS
 BEGIN
     SET NOCOUNT ON;
-    	                                    UPDATE dbo.AspNetUsers 
-    		                                    SET FirstName = @FirstName,
-    			                                    LastName = @LastName,
-    			                                    Gravatar = @Gravatar,
-    			                                    CellNumber = @CellNumber,
-    			                                    Email = @Email
-    			                                    WHERE Id = @userId
+    UPDATE dbo.Users 
+    	SET FirstName = @FirstName,
+    		LastName = @LastName,
+    		Gravatar = @Gravatar,
+    		CellNumber = @CellNumber,
+    		Email = @Email
+    		WHERE Id = @userId
 END
 GO

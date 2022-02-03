@@ -1,8 +1,10 @@
 ﻿using System;
+using cogs_api.Models;
+
 namespace cogs_api.Interfaces
 {
     public interface IJwtAuth
     {
-        string Authentication(string username, string password);
+        string Authentication(UserCredential userCredential);
     }
 }

@@ -3,12 +3,8 @@ namespace cogs_api.Models
 {
     public class Application
     {
-        public int Id { get; set; }
-        public string FirstName { get; set; }
-        public string LastName { get; set; }
-        public string Gender { get; set; }
-        public string EmailAddress { get; set; }
-        public string Phone { get; set; }
+        public int? Id { get; set; }
+        public int UserId { get; set; }
         public string School { get; set; }
         public string Major { get; set; }
         public string Topics { get; set; }

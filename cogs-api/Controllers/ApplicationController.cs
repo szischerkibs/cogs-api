@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using cogs_api.Models;
 using cogs_api.Repositories;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -27,10 +28,10 @@ namespace cogs_api.Controllers
         /// </summary>
         /// <returns>Applications</returns>
         [HttpGet]
-        public IActionResult GetAll()
-        {
+        public List<Application> GetAll()
+        {            
             var applications = applicationRepository.GetAllApplications();
-            return Ok(applications);
+            return applications;
         }
     }
 }

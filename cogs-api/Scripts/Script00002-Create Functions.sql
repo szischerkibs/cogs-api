@@ -1,123 +1,119 @@
-﻿/****** Object:  UserDefinedFunction [dbo].[CSVtoTable]     ******/
+﻿/****** Object:  UserDefinedFunction [dbo].[CSVtoTable]    Script Date: 1/31/2022 1:04:14 PM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
 GO
-
-                    CREATE FUNCTION [dbo].[CSVtoTable]
-                    (
-                        @LIST varchar(MAX),
-                        @Delimeter varchar(10)
-                    )
-                    RETURNS @RET1 TABLE (RESULT VARCHAR(50))
-                    AS
-                    BEGIN
-                        DECLARE @RET TABLE(RESULT VARCHAR(50))
+CREATE FUNCTION [dbo].[CSVtoTable]
+(
+    @LIST varchar(MAX),
+    @Delimeter varchar(10)
+)
+RETURNS @RET1 TABLE (RESULT VARCHAR(50))
+AS
+BEGIN
+    DECLARE @RET TABLE(RESULT VARCHAR(50))
     
-                        IF LTRIM(RTRIM(@LIST))='' RETURN  
+    IF LTRIM(RTRIM(@LIST))='' RETURN  
 
-                        DECLARE @START BIGINT
-                        DECLARE @LASTSTART BIGINT
-                        SET @LASTSTART=0
-                        SET @START=CHARINDEX(@Delimeter,@LIST,0)
+    DECLARE @START BIGINT
+    DECLARE @LASTSTART BIGINT
+    SET @LASTSTART=0
+    SET @START=CHARINDEX(@Delimeter,@LIST,0)
 
-                        IF @START=0
-                        INSERT INTO @RET VALUES(LTRIM(RTRIM(SUBSTRING(@LIST,0,LEN(@LIST)+1))))
+    IF @START=0
+    INSERT INTO @RET VALUES(LTRIM(RTRIM(SUBSTRING(@LIST,0,LEN(@LIST)+1))))
 
-                        WHILE(@START >0)
-                        BEGIN
-                            INSERT INTO @RET VALUES(LTRIM(RTRIM(SUBSTRING(@LIST,@LASTSTART,@START-@LASTSTART))))
-                            SET @LASTSTART=@START+1
-                            SET @START=CHARINDEX(@Delimeter,@LIST,@START+1)
-                            IF(@START=0)
-                            INSERT INTO @RET VALUES(LTRIM(RTRIM(SUBSTRING(@LIST,@LASTSTART,LEN(@LIST)+1))))
-                        END
+    WHILE(@START >0)
+    BEGIN
+        INSERT INTO @RET VALUES(LTRIM(RTRIM(SUBSTRING(@LIST,@LASTSTART,@START-@LASTSTART))))
+        SET @LASTSTART=@START+1
+        SET @START=CHARINDEX(@Delimeter,@LIST,@START+1)
+        IF(@START=0)
+        INSERT INTO @RET VALUES(LTRIM(RTRIM(SUBSTRING(@LIST,@LASTSTART,LEN(@LIST)+1))))
+    END
     
-                        INSERT INTO @RET1 SELECT * FROM @RET
-                        RETURN 
-                    END
+    INSERT INTO @RET1 SELECT * FROM @RET
+    RETURN 
+END
 GO
-/****** Object:  UserDefinedFunction [dbo].[HasCollision]     ******/
+/****** Object:  UserDefinedFunction [dbo].[HasCollision]    Script Date: 1/31/2022 1:04:14 PM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
 GO
+CREATE FUNCTION [dbo].[HasCollision] 
+(
+	-- Add the parameters for the function here
+	@SessionId INT,
+	@UserId INT
+)
+RETURNS bit
+AS
+BEGIN
+	-- Declare the return variable here
+	DECLARE @Result BIT = 0
 
-                    CREATE FUNCTION [dbo].[HasCollision] 
-                    (
-	                    -- Add the parameters for the function here
-	                    @SessionId INT,
-	                    @UserId VARCHAR(128)
-                    )
-                    RETURNS bit
-                    AS
-                    BEGIN
-	                    -- Declare the return variable here
-	                    DECLARE @Result BIT = 0
+	-- Add the T-SQL statements to compute the return value here
+	DECLARE @CollisionCount INT = 0
 
-	                    -- Add the T-SQL statements to compute the return value here
-	                    DECLARE @CollisionCount INT = 0
-
-	                    SELECT @CollisionCount = count(*) FROM
-	                    (SELECT s.Id , s.SessionStartTime, s.SessionEndTime FROM dbo.UserSessions su 
-		                    INNER JOIN (SELECT * FROM dbo.Sessions WHERE VolunteersRequired <> 99) s 
-			                    ON s.Id = su.Session_Id
-		                    WHERE su.User_Id = @UserId) a,
+	SELECT @CollisionCount = count(*) FROM
+	(SELECT s.Id , s.SessionStartTime, s.SessionEndTime FROM dbo.UserSessions su 
+		INNER JOIN (SELECT * FROM dbo.Sessions WHERE VolunteersRequired <> 99) s 
+			ON s.Id = su.SessionId
+		WHERE su.UserId = @UserId) a,
 	
-	                    (SELECT * FROM (SELECT * FROM dbo.Sessions WHERE VolunteersRequired <> 99) s 
-		                    WHERE s.Id = @SessionId) b
-		                    WHERE b.SessionStartTime BETWEEN a.SessionStartTime AND a.SessionEndTime
-                                OR b.SessionEndTime BETWEEN a.SessionStartTime AND a.SessionEndTime
-                                OR (b.SessionStartTime <= a.SessionStartTime AND b.SessionEndTime >= a.SessionEndTime)
+	(SELECT * FROM (SELECT * FROM dbo.Sessions WHERE VolunteersRequired <> 99) s 
+		WHERE s.Id = @SessionId) b
+		WHERE b.SessionStartTime BETWEEN a.SessionStartTime AND a.SessionEndTime
+            OR b.SessionEndTime BETWEEN a.SessionStartTime AND a.SessionEndTime
+            OR (b.SessionStartTime <= a.SessionStartTime AND b.SessionEndTime >= a.SessionEndTime)
 
-	                    IF @CollisionCount > 0
-	                    BEGIN
-		                    SET @Result = 1
-	                    END
+	IF @CollisionCount > 0
+	BEGIN
+		SET @Result = 1
+	END
 
-	                    -- Return the result of the function
-	                    RETURN @Result
+	-- Return the result of the function
+	RETURN @Result
 
-                    END
-                    
+END
 GO
-/****** Object:  UserDefinedFunction [dbo].[HasException]     ******/
+/****** Object:  UserDefinedFunction [dbo].[HasException]    Script Date: 1/31/2022 1:04:14 PM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
 GO
+CREATE FUNCTION [dbo].[HasException] 
+(
+	-- Add the parameters for the function here
+	@SessionId INT,
+	@UserId INT
+)
+RETURNS bit
+AS
+BEGIN
+	-- Declare the return variable here
+	DECLARE @Result BIT = 0
 
-                    CREATE FUNCTION [dbo].[HasException] 
-                    (
-	                    -- Add the parameters for the function here
-	                    @SessionId INT,
-	                    @UserId VARCHAR(128)
-                    )
-                    RETURNS bit
-                    AS
-                    BEGIN
-	                    -- Declare the return variable here
-	                    DECLARE @Result BIT = 0
+	-- Add the T-SQL statements to compute the return value here
+	DECLARE @ExceptionCount INT = 0
 
-	                    -- Add the T-SQL statements to compute the return value here
-	                    DECLARE @ExceptionCount INT = 0
-
-	                    SELECT @ExceptionCount = count(*) FROM
-	                    (SELECT se.Id , se.StartTime, se.EndTime FROM dbo.ScheduleExceptions se		                    
-		                    WHERE se.User_Id = @UserId) a,
+	SELECT @ExceptionCount = count(*) FROM
+	(SELECT se.Id , se.StartTime, se.EndTime FROM dbo.ScheduleExceptions se		                    
+		WHERE se.UserId = @UserId) a,
 	
-	                    (SELECT * FROM dbo.Sessions s 
-		                    WHERE s.Id = @SessionId) b
-		                    WHERE b.SessionStartTime BETWEEN a.StartTime AND a.EndTime
-                                OR b.SessionEndTime BETWEEN a.StartTime AND a.EndTime
+	(SELECT * FROM dbo.Sessions s 
+		WHERE s.Id = @SessionId) b
+		WHERE b.SessionStartTime BETWEEN a.StartTime AND a.EndTime
+            OR b.SessionEndTime BETWEEN a.StartTime AND a.EndTime
 
-	                    IF @ExceptionCount > 0
-	                    BEGIN
-		                    SET @Result = 1
-	                    END
+	IF @ExceptionCount > 0
+	BEGIN
+		SET @Result = 1
+	END
 
-	                    -- Return the result of the function
-	                    RETURN @Result
+	-- Return the result of the function
+	RETURN @Result
 
-                    END
+END
 GO

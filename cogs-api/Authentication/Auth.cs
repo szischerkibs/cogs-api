@@ -3,24 +3,25 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
 using cogs_api.Interfaces;
+using cogs_api.Models;
+using cogs_api.Repositories;
 using Microsoft.IdentityModel.Tokens;
 
 namespace cogs_api.Authentication
 {
     public class Auth : IJwtAuth
     {
-        private readonly string username = "jdoe";
-        private readonly string password = "dothemash22";
         private readonly string key = "";
-
+        AuthRepository authRepository;
         public Auth(string key)
         {
+            authRepository = new AuthRepository("Unknown");
             this.key = key;
         }
 
-        public string Authentication(string username, string password)
+        public string Authentication(UserCredential userCredential)
         {
-            if(!(username.Equals(this.username) || password.Equals(this.password)))
+            if(authRepository.Login(userCredential) == -1)
             {
                 return null;
             }
@@ -33,7 +34,7 @@ namespace cogs_api.Authentication
             {
                 Subject = new ClaimsIdentity(new Claim[]
                 {
-                    new Claim(ClaimTypes.Name, username)
+                    new Claim(ClaimTypes.Name, userCredential.UserName)
                 }),
                 Expires = DateTime.UtcNow.AddHours(1),
                 SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(tokenKey), SecurityAlgorithms.HmacSha256Signature)
