@@ -15,5 +15,16 @@ namespace cogs_api.Models
         /// Password used to log in 
         /// </summary>
         public string Password { get; set; }
+
+        /// <summary>
+        /// Password used to log in 
+        /// </summary>
+        public string PasswordHash {
+            get
+            {
+                return Utilities.Security.HashText(this.Password);
+            }
+        }
+
     }
 }

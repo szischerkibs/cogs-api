@@ -2,11 +2,11 @@
 using System.Collections.Generic;
 using System.Linq;
 
-namespace cogs_api.Models
+namespace cogs_api.Dtos
 {
-    public class Application
+    public class ApplicationReadDto
     {
-        public int? Id { get; set; }
+        public int Id { get; set; }
         public int UserId { get; set; }
         public string School { get; set; }
         public string Major { get; set; }
@@ -19,7 +19,8 @@ namespace cogs_api.Models
         public bool AcceptedByApplicant { get; set; }
         public bool Registered { get; set; }
 
-        public List<string> TopicsList {
+        public List<string> TopicsList
+        {
             get
             {
                 return this.Topics.Split(",").ToList();

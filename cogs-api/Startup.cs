@@ -1,20 +1,14 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
-using cogs_api.Authentication;
 using cogs_api.Interfaces;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
+using cogs_api.Repositories;
+using cogs_api.Utilities;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.HttpsPolicy;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 
@@ -32,29 +26,35 @@ namespace cogs_api
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
+            services.AddAuthentication("OAuth")
+                .AddJwtBearer("OAuth", config => {
 
-            services.AddControllers();
-            var key = "Do the CodeMash Mash in 2022 or whenever you want to mash!";
+                    var secretBytes = Encoding.UTF8.GetBytes(Configuration.GetSection("Secret").Value);
+                    var symmetricSecurityKey = new SymmetricSecurityKey(secretBytes);
 
-            services.AddAuthentication(x =>
-            {
-                x.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-                x.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-            }).AddJwtBearer(x =>
-            {
-                x.RequireHttpsMetadata = true;
-                x.SaveToken = true;
-                x.TokenValidationParameters = new Microsoft.IdentityModel.Tokens.TokenValidationParameters
-                {
-                    ValidateIssuerSigningKey = true,
-                    ValidateIssuer = false,
-                    ValidateAudience = false,
-                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.ASCII.GetBytes(key))
-                };
+                    config.TokenValidationParameters = new TokenValidationParameters()
+                    {
+                        ValidIssuer = Configuration.GetSection("Issuer").Value,
+                        ValidAudience = Configuration.GetSection("Audience").Value,
+                        IssuerSigningKey = symmetricSecurityKey
+                    };
+                });
+
+            services.AddAuthentication().AddTwitter(twitterOptions => {
+                twitterOptions.ConsumerKey = Configuration.GetSection("twitterConsumerKey").Value;
+                twitterOptions.ConsumerSecret = Configuration.GetSection("twitterConsumerSecret").Value;
             });
 
-            services.AddSingleton<IJwtAuth>(new Auth(key));
+            //Dependency Injection - add repositories
+            services.AddScoped<IApplicationRepository, ApplicationRepository>();
+            services.AddScoped<IUserRepository, UserRepository>();
+            services.AddScoped<IAuthRepository, AuthRepository>();
 
+
+            services.AddControllers();
+
+            services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
+            
             services.AddSwaggerGen(c =>
             {
                 c.SwaggerDoc("v1", new OpenApiInfo { Title = "CogsApi", Version = "v1" });

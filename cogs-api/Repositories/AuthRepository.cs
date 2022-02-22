@@ -2,27 +2,27 @@
 using System.Collections.Generic;
 using System.Data;
 using System.Data.SqlClient;
+using cogs_api.Interfaces;
 using cogs_api.Models;
 using cogs_api.Utilities;
+using Microsoft.Extensions.Configuration;
 
 namespace cogs_api.Repositories
 {
-    public class AuthRepository : BaseSqlRepository
+    public class AuthRepository : BaseSqlRepository, IAuthRepository
     {
-        private string _connStr;
-
-        public AuthRepository(string username) : base(username)
+        public AuthRepository(IConfiguration configuration) : base(configuration)
         {
-            _connStr = AppSettingsJson.GetAppSettings()["ConnectionStrings:CogsDB"];
         }
 
         public int Login(UserCredential userCredential)
         {
             List<SqlParameter> prms = new List<SqlParameter>();
             prms.Add(new SqlParameter("@Username", userCredential.UserName));
-            prms.Add(new SqlParameter("@PasswordHash", Utilities.Security.HashText(userCredential.Password)));
+            prms.Add(new SqlParameter("@PasswordHash", userCredential.PasswordHash));
+
             int userId = (int)ExecuteScalar(
-                _connStr,
+                _cogsConnStr,
                 CommandType.StoredProcedure,
                 "LoginAuth",
                 prms.ToArray());

@@ -2,27 +2,26 @@
 using System.Collections.Generic;
 using System.Data;
 using System.Data.SqlClient;
+using cogs_api.Interfaces;
 using cogs_api.Models;
 using cogs_api.Utilities;
+using Microsoft.Extensions.Configuration;
 
 namespace cogs_api.Repositories
 {
-    public class UserRepository : BaseSqlRepository
+    public class UserRepository : BaseSqlRepository, IUserRepository
     {
-        private string _connStr;
-
-        public UserRepository(string username) : base(username)
+        public UserRepository(IConfiguration configuration) : base(configuration)
         {
-            _connStr = AppSettingsJson.GetAppSettings()["ConnectionStrings:CogsDB"];
         }
 
-        public List<User> GetUsers()
+        public IEnumerable<User> GetAll()
         {
-            List<SqlParameter> prms = new List<SqlParameter>();
+            List<SqlParameter> prms = new();
 
             List<User> users =
                 ExecuteReader(
-                    _connStr,
+                    _cogsConnStr,
                     CommandType.StoredProcedure,
                     "UserGetAll",
                     AutoConvert<User>,
@@ -31,31 +30,41 @@ namespace cogs_api.Repositories
             return users;
         }
 
-        public int CreateUser(User user)
+        public User Create(User user)
         {
-            List<SqlParameter> prms = new List<SqlParameter>();
-            int userId = (int) ExecuteScalar(
-                _connStr,
+            List<SqlParameter> prms = new();            
+            prms.Add(new SqlParameter("@FirstName", user.FirstName));
+            prms.Add(new SqlParameter("@LastName", user.LastName));
+            prms.Add(new SqlParameter("@CellNumber", user.CellNumber));
+            prms.Add(new SqlParameter("@Email", user.Email));            
+            prms.Add(new SqlParameter("@PasswordHash", Security.HashText(user.Password)));
+            prms.Add(new SqlParameter("@Gender", user.Gender));
+
+            int userId = Convert.ToInt32(ExecuteScalar(
+                _cogsConnStr,
                 CommandType.StoredProcedure,
                 "UserCreate",
-                prms.ToArray());
+                prms.ToArray()));
 
-            return userId;
+            user.Id = userId;
+
+            return user;
         }
 
-        public User GetUserById(int id)
+        public User GetById(int id)
         {
-            List<SqlParameter> prms = new List<SqlParameter>();
+            List<SqlParameter> prms = new ();
+            prms.Add(new SqlParameter("UserId", id));
 
-            List<User> users =
-                ExecuteReader(
-                    _connStr,
+            User user =
+                ExecuteReaderSingle(
+                    _cogsConnStr,
                     CommandType.StoredProcedure,
-                    "UserGetAll",
+                    "UserGetById",
                     AutoConvert<User>,
                     prms.ToArray());
 
-            return users[0];
+            return user;
         }
     }
 }

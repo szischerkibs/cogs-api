@@ -1,14 +1,8 @@
 ﻿using System;
-using System.Collections.Generic;
-
-namespace cogs_api.Models
+namespace cogs_api.Dtos
 {
-    public class User
+    public class UserReadDto
     {
-        public User()
-        {
-        }
-
         public int Id { get; set; }
         public string FirstName { get; set; }
         public string LastName { get; set; }
@@ -23,7 +17,6 @@ namespace cogs_api.Models
         public bool Cancelled { get; set; }
         public DateTime? CancelledDate { get; set; }
         public bool NeedHotel { get; set; }
-        public string Gender { get; set; }
-        public string Password { get; set; }
+        public string Gender { get; set; }        
     }
 }

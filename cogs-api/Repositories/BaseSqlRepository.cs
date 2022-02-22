@@ -3,24 +3,25 @@ using System.Collections.Generic;
 using System.Data;
 using System.Data.SqlClient;
 using System.Reflection;
+using cogs_api.Interfaces;
 using cogs_api.Utilities;
+using Microsoft.Extensions.Configuration;
 
 namespace cogs_api.Repositories
 {
     public class BaseSqlRepository
     {
         
-        private string _errorLogConnStr = "";
-        private string _username = "Unknown";
+        public string _errorLogConnStr = "";
+        public string _cogsConnStr = "";
+        public string _username = "Unknown";
+        public readonly IConfiguration _appConfig;
 
-        public BaseSqlRepository()
-        {            
-            _errorLogConnStr = AppSettingsJson.GetAppSettings()["ConnectionStrings:ErrorLog"];
-        }
-
-        public BaseSqlRepository(string username) : base()
+        public BaseSqlRepository(IConfiguration configuration)
         {
-            this._username = username;
+            _appConfig = configuration;            
+            _errorLogConnStr = _appConfig.GetConnectionString("ErrorLog");
+            _cogsConnStr = _appConfig.GetConnectionString("CogsDB");
         }
 
         #region Sql Error Handling
@@ -51,11 +52,12 @@ namespace cogs_api.Repositories
             catch (SqlException se)
             {
                 int logId = LogSqlError(se, connectionString);
-                throw new CogsException(logId, "ExecuteNonQuery error", se);
+                throw new CogsException(logId, "Sql ExecuteNonQuery error", se);
             }
-            catch
+            catch (Exception ex)
             {
-
+                int logId = LogError(ex);
+                throw new CogsException(logId, "General ExecuteNonQuery error", ex);
             }
         }
 
@@ -87,14 +89,13 @@ namespace cogs_api.Repositories
             catch (SqlException se)
             {
                 int logId = LogSqlError(se, connectionString);
-                throw new CogsException(logId, "ExecuteScalar error", se);
+                throw new CogsException(logId, "Sql ExecuteScalar error", se);
             }
-            catch 
+            catch (Exception ex)
             {
-
-            }
-
-            return null;
+                int logId = LogError(ex);
+                throw new CogsException(logId, "General ExecuteScalar error", ex);
+            }            
         }
 
         /// <summary>
@@ -134,11 +135,12 @@ namespace cogs_api.Repositories
             catch (SqlException se)
             {
                 int logId = LogSqlError(se, connectionString);
-                throw new CogsException(logId, "ExecuteReader error", se);
+                throw new CogsException(logId, "Sql ExecuteReader error", se);
             }
-            catch
+            catch (Exception ex)
             {
-
+                int logId = LogError(ex);
+                throw new CogsException(logId, "General ExecuteReader error", ex);
             }
 
             return retval;
@@ -181,11 +183,12 @@ namespace cogs_api.Repositories
             catch (SqlException se)
             {
                 int logId = LogSqlError(se, connectionString);
-                throw new CogsException(logId, "ExecuteReader error", se);
+                throw new CogsException(logId, "Sql ExecuteReaderSingle error", se);
             }
-            catch
+            catch (Exception ex)
             {
-
+                int logId = LogError(ex);
+                throw new CogsException(logId, "General ExecuteReaderSingle error", ex);
             }
 
             return retval;
@@ -195,6 +198,7 @@ namespace cogs_api.Repositories
         /// Logs sql error to SQL Errors DB
         /// </summary>
         /// <param name="se">Accepts a SQL exception</param>
+        /// <param name="connectionString">Accepts a connection string</param>
         /// <returns>Error Id</returns>
         protected int LogSqlError(SqlException se, string connectionString)
         {
@@ -215,7 +219,7 @@ namespace cogs_api.Repositories
                         cmd.Parameters.AddWithValue("ErrorState", se.State);
                         cmd.Parameters.AddWithValue("ErrorLine", se.LineNumber);
                         cmd.Parameters.AddWithValue("ErrorMessage", se.Message);
-                        cmd.Parameters.AddWithValue("Username", _username);
+                        //cmd.Parameters.AddWithValue("Username", _username);
 
                         int id = Convert.ToInt32(cmd.ExecuteScalar());
 
@@ -230,14 +234,53 @@ namespace cogs_api.Repositories
             }
         }
 
+        /// <summary>
+        /// Logs general error to SQL Errors DB
+        /// </summary>
+        /// <param name="ge">Accepts a general exception</param>
+        /// <returns>Error Id</returns>
+        protected int LogError(Exception ge)
+        {
+            try
+            {                
+                using (var conn = new SqlConnection(_errorLogConnStr))
+                {
+                    //using (var cmd = new SqlCommand("InsertDBError", conn))
+                    //{
+                    //    conn.Open();
+                    //    cmd.CommandType = CommandType.StoredProcedure;
+                    //    cmd.Parameters.AddWithValue("SourceServer", se.Server);
+                    //    cmd.Parameters.AddWithValue("SourceDatabase", errorConnString.Database);
+                    //    cmd.Parameters.AddWithValue("SourceObject", se.Procedure);
+                    //    cmd.Parameters.AddWithValue("ErrorNumber", se.Number);
+                    //    cmd.Parameters.AddWithValue("ErrorSeverity", se.Class);
+                    //    cmd.Parameters.AddWithValue("ErrorState", se.State);
+                    //    cmd.Parameters.AddWithValue("ErrorLine", se.LineNumber);
+                    //    cmd.Parameters.AddWithValue("ErrorMessage", se.Message);
+                    //    //cmd.Parameters.AddWithValue("Username", _username);
+
+                    //    int id = Convert.ToInt32(cmd.ExecuteScalar());
+
+                    //    return id;
+                    return -1;
+                    //}
+                }
+            }
+            catch
+            {
+                //Need to swallow error if this doesn't work, return a -99 to indicate that error logging failed.
+                return -99;
+            }
+        }
+
         #endregion
 
         #region Value Conversion
-        
+
         /// <summary>
         /// Retrieves a field value from the Data objects
         /// </summary>
-        /// <param name="fieldName">Name of the field in the dataset</param>
+        /// <param name="value">Name of the field in the dataset</param>
         /// <returns>boolean value for the field</returns>
         protected bool BoolValue(object value)
         {
@@ -247,7 +290,7 @@ namespace cogs_api.Repositories
         /// <summary>
         /// Retrieves a field value from the Data objects
         /// </summary>
-        /// <param name="fieldName">Name of the field in the dataset</param>
+        /// <param name="value">Name of the field in the dataset</param>
         /// <returns>Decimal value for the field</returns>
         protected decimal DecimalValue(object value)
         {
@@ -257,7 +300,7 @@ namespace cogs_api.Repositories
         /// <summary>
         /// Retrieves a field value from the Data objects
         /// </summary>
-        /// <param name="fieldName">Name of the field in the dataset</param>
+        /// <param name="value">Name of the field in the dataset</param>
         /// <returns>String value for the field</returns>
         protected string StringValue(object value)
         {
@@ -267,7 +310,7 @@ namespace cogs_api.Repositories
         /// <summary>
         /// Retrieves a field value from the Data objects
         /// </summary>
-        /// <param name="fieldName">Name of the field in the dataset</param>
+        /// <param name="value">Name of the field in the dataset</param>
         /// <returns>DateTime value for the field</returns>
         protected DateTime DateTimeValue(object value)
         {
@@ -277,7 +320,7 @@ namespace cogs_api.Repositories
         /// <summary>
         /// Retrieves a field value from the Data objects
         /// </summary>
-        /// <param name="fieldName">Name of the field in the dataset</param>
+        /// <param name="value">Name of the field in the dataset</param>
         /// <returns>DateTime value for the field</returns>
         protected DateTimeOffset DateTimeOffsetValue(object value)
         {
@@ -287,7 +330,7 @@ namespace cogs_api.Repositories
         /// <summary>
         /// Retrieves a field value from the Data objects
         /// </summary>
-        /// <param name="fieldName">Name of the field in the dataset</param>
+        /// <param name="value">Name of the field in the dataset</param>
         /// <returns>DateTime? value for the field</returns>
         protected DateTime? NullableDateTimeValue(object value)
         {
@@ -312,7 +355,7 @@ namespace cogs_api.Repositories
         /// <summary>
         /// Retrieves a field value from the Data objects
         /// </summary>
-        /// <param name="fieldName">Name of the field in the dataset</param>
+        /// <param name="value">Name of the field in the dataset</param>
         /// <returns>Double value for the field</returns>
         protected double DoubleValue(object value)
         {
@@ -322,7 +365,7 @@ namespace cogs_api.Repositories
         /// <summary>
         /// Retrieves a field value from the Data objects
         /// </summary>
-        /// <param name="fieldName">Name of the field in the dataset</param>
+        /// <param name="value">Name of the field in the dataset</param>
         /// <returns>Double value for the field</returns>
         protected double? NullableDoubleValue(object value)
         {
@@ -339,7 +382,7 @@ namespace cogs_api.Repositories
         /// <summary>
         /// Retrieves a field value from the Data objects
         /// </summary>
-        /// <param name="fieldName">Name of the field in the dataset</param>
+        /// <param name="value">Name of the field in the dataset</param>
         /// <returns>Nullable Boolean value for the field</returns>
         protected bool? NullableBoolValue(object value)
         {
@@ -359,7 +402,7 @@ namespace cogs_api.Repositories
         /// <summary>
         /// Retrieves a field value from the Data objects
         /// </summary>
-        /// <param name="fieldName">Name of the field in the dataset</param>
+        /// <param name="value">Name of the field in the dataset</param>
         /// <returns>Nullable Integer value for the field</returns>
         protected int? NullableIntValue(object value)
         {
@@ -379,7 +422,7 @@ namespace cogs_api.Repositories
         /// <summary>
         /// Retrieves a field value from the Data objects
         /// </summary>
-        /// <param name="fieldName">Name of the field in the dataset</param>
+        /// <param name="value">Name of the field in the dataset</param>
         /// <returns>Integer value for the field</returns>
         protected int IntValue(object value)
         {

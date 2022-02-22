@@ -34,6 +34,9 @@
     <None Remove="Scripts\Script00005-Create Error Log.sql" />
     <None Remove="Microsoft.AspNetCore.Cryptography.KeyDerivation" />
     <None Remove="ViewModels\" />
+    <None Remove="Microsoft.AspNetCore.Authentication.Twitter" />
+    <None Remove="AutoMapper.Extensions.Microsoft.DependencyInjection" />
+    <None Remove="Profiles\" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Models\" />
@@ -43,7 +46,8 @@
     <Folder Include="Interfaces\" />
     <Folder Include="Authentication\" />
     <Folder Include="Utilities\" />
-    <Folder Include="ViewModels\" />
+    <Folder Include="Dtos\" />
+    <Folder Include="Profiles\" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="dbup-sqlserver" Version="4.5.0" />
@@ -54,6 +58,8 @@
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="5.0.13" />
     <PackageReference Include="System.Configuration.ConfigurationManager" Version="6.0.0" />
     <PackageReference Include="Microsoft.AspNetCore.Cryptography.KeyDerivation" Version="6.0.1" />
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.Twitter" Version="5.0.13" />
+    <PackageReference Include="AutoMapper.Extensions.Microsoft.DependencyInjection" Version="11.0.0" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="Scripts\Script00001-Create tables.sql" />
